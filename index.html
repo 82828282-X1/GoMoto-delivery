@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title></title>
+    <title>GoMoto</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <style>
       body {
@@ -44,15 +44,14 @@
     </style>
   </head>
   <body>
-    <h2>Set Drop-Off Location</h2>
-    <input type="text" id="dropOffInput" placeholder="Click to enter drop-off location" autocomplete="off"><br>
+    <input type="text" id="dropOffInput" placeholder="Enter or select drop-off location" autocomplete="off"><br>
 
     <div id="map"></div>
 
     <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
 
     <script>
-      let map, dropOffMarker, dropOffCoords, autocomplete, suggestionBox;
+      let map, dropOffMarker, dropOffCoords, autocomplete;
 
       function initMap() {
         // Initialize the map
@@ -68,23 +67,20 @@
           componentRestrictions: { country: "MW" }, // Restrict to Malawi
         });
 
-        // Add a custom "Use Current Location" option in the dropdown
+        // Add "Use Current Location" to the dropdown
         dropOffInput.addEventListener("input", () => {
           const customDropdown = document.querySelector(".pac-container");
-          if (!customDropdown) return;
+          if (customDropdown && !customDropdown.querySelector(".current-location-option")) {
+            const currentLocationOption = document.createElement("div");
+            currentLocationOption.className = "pac-item current-location-option";
+            currentLocationOption.style.cursor = "pointer";
+            currentLocationOption.textContent = "Use Current Location";
+            currentLocationOption.onclick = () => {
+              useCurrentLocation();
+            };
 
-          // Add "Use Current Location" as the first suggestion
-          const currentLocationOption = document.createElement("div");
-          currentLocationOption.className = "pac-item";
-          currentLocationOption.style.cursor = "pointer";
-          currentLocationOption.textContent = "Use Current Location";
-          currentLocationOption.onclick = () => {
-            useCurrentLocation();
-          };
-
-          // Insert "Use Current Location" at the top of the dropdown
-          if (customDropdown.firstChild) {
-            customDropdown.insertBefore(currentLocationOption, customDropdown.firstChild);
+            // Insert "Use Current Location" at the top of the dropdown
+            customDropdown.prepend(currentLocationOption);
           }
         });
 
@@ -174,3 +170,4 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
+
