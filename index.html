@@ -68,7 +68,7 @@
         });
 
         // Add "Use Current Location" to the dropdown
-        dropOffInput.addEventListener("input", () => {
+        dropOffInput.addEventListener("focus", () => {
           const customDropdown = document.querySelector(".pac-container");
           if (customDropdown && !customDropdown.querySelector(".current-location-option")) {
             const currentLocationOption = document.createElement("div");
@@ -159,9 +159,9 @@
         const coords = dropOffMarker.getPosition();
         const googleMapsLink = `https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)}`;
         navigator.clipboard.writeText(googleMapsLink).then(() => {
-          alert("Drop-off location copied to clipboard!");
+          alert("Google Maps link copied to clipboard!");
         }).catch(() => {
-          alert("Failed to copy the location. Please try again.");
+          alert("Failed to copy the link. Please try again.");
         });
       }
     </script>
@@ -170,4 +170,3 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
-
