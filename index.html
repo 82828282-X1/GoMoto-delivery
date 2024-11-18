@@ -25,7 +25,7 @@
         border: none;
         border-radius: 20px;
         cursor: pointer;
-        font-size: 17px; /* Increased font size */
+        font-size: 18px; /* Increased font size */
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         transition: background-color 0.3s;
         margin: 10px;
@@ -48,14 +48,14 @@
         border-radius: 20px;
         border: 1px solid #ccc;
         font-size: 18px; /* Increased font size */
-        height: 60px; /* Increased height */
+        height: 50px; /* Increased height */
         line-height: 50px; /* Align text vertically */
       }
     </style>
   </head>
   <body>
     <div class="input-container">
-      <input type="text" id="dropOffInput" placeholder="Select drop-off location" autocomplete="off">
+      <input type="text" id="dropOffInput" placeholder="Enter or select drop-off location" autocomplete="off">
       <button class="btn" onclick="useCurrentLocation()">Current<br>Location</button>
     </div>
 
@@ -119,14 +119,14 @@
 
       function setDropOffMarker(location) {
         const svgIcon = {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve">
               <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
                 <path d="M 45 0 C 29.897 0 17.611 12.287 17.611 27.389 C 17.611 46.616 43.853 66.607 45 90 c 1.147 -23.393 27.389 -43.384 27.389 -62.611 C 72.389 12.287 60.103 0 45 0 z" style="fill: rgb(247,144,30);" />
                 <circle cx="45.01" cy="26.57" r="12.5" style="fill: rgb(255,255,255);" />
               </g>
             </svg>
-          ),
+          `),
           scaledSize: new google.maps.Size(40, 40),
         };
 
@@ -152,7 +152,7 @@
       }
 
       function updateDropOffInput(coords) {
-        document.getElementById("dropOffInput").value = Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)};
+        document.getElementById("dropOffInput").value = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
       }
 
       function copyDropOffInfo() {
@@ -162,7 +162,7 @@
         }
 
         const coords = dropOffMarker.getPosition();
-        const info = https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)};
+        const info = `https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)}`;
         navigator.clipboard.writeText(info).then(() => {
           alert("Drop-off location link copied to clipboard!");
         }).catch(() => {
@@ -175,4 +175,3 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
-
