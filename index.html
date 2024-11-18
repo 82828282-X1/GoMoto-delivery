@@ -18,7 +18,7 @@
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
-     .btn {
+      .btn {
         padding: 10px 18px;
         background-color: #F4A261;
         color: #FFFFFF;
@@ -30,187 +30,145 @@
         transition: background-color 0.3s;
         margin: 10px;
       }
-     .btn:hover {
+      .btn:hover {
         background-color: #E63946;
       }
+      .input-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+      }
       input[type="text"] {
-        width: 90%;
+        width: 75%;
         padding: 10px;
-        margin-top: 5px;
         border-radius: 20px;
         border: 1px solid #ccc;
         font-size: 14px;
+        margin-right: 10px;
       }
     </style>
   </head>
   <body>
-    <input type="text" id="dropOffLocation" placeholder="Enter or modify drop-off location">
-    <br>
+    <div class="input-container">
+      <input type="text" id="dropOffInput" placeholder="Enter or select drop-off location" autocomplete="off">
+      <button class="btn" onclick="useCurrentLocation()">Use Current Location</button>
+    </div>
+
     <div id="map"></div>
-    <button class="btn" onclick="copyInfo()">Copy Drop-Off Location</button>
+
+    <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
+
     <script>
-      let map, dropOffMarker, dropOffCoords;
-      let geocoder;
-      
+      let map, dropOffMarker, autocomplete;
+
       function initMap() {
-        // Initialize the map centered on current location or default to Blantyre, Malawi
-        navigator.geolocation.getCurrentPosition((position) => {
-          const coords = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          map = new google.maps.Map(document.getElementById("map"), {
-            center: { lat: coords.lat, lng: coords.lng },
-            zoom: 13,
-            mapTypeId: "hybrid"
-          });
-          geocoder = new google.maps.Geocoder = new google.maps.Geocoder
-          
-          // Set a default marker at the map's center
-          const defaultLocation = map.getCenter();
-          setDropOffMarker(defaultLocation);
-          updateLocationText(null); // Initially, keep the input field empty
-          
-          // Attempt to get the user's current location
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const coords = {
-                  lat: position.coords.latitude,
-                  lng: position.coords.longitude
-                };
-                map.setCenter(coords);
-                setDropOffMarker(coords);
-                // Reverse geocode to get the address
-                geocodeLatLng(coords, (address) => {
-                  updateLocationText(address);
-                });
-              },
-              (error) => {
-                console.log("Geolocation error: ", error);
-                alert("Unable to access location. Please enter manually.");
-              },
-              { enableHighAccuracy: true }
-            );
+        // Initialize the map centered on Blantyre, Malawi
+        const defaultCoords = { lat: -15.7861, lng: 35.0058 };
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: defaultCoords,
+          zoom: 13, // Set closer zoom on Malawi
+          mapTypeId: "hybrid",
+        });
+
+        // Initialize the input field and autocomplete
+        const dropOffInput = document.getElementById("dropOffInput");
+        autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
+          componentRestrictions: { country: "MW" }, // Restrict to Malawi
+        });
+
+        // Handle place selection from autocomplete
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry && place.geometry.location) {
+            const location = place.geometry.location;
+            map.setCenter(location);
+            map.setZoom(15); // Closer zoom for more detail
+            setDropOffMarker(location);
+          } else {
+            alert("Invalid place selected. Please try again.");
           }
-          
-          // Set up Places Autocomplete
-          const autocomplete = new google.maps.places.Autocomplete(
-            document.getElementById("dropOffLocation"),
-            {
-              componentRestrictions: { country: "MW" }, // Restrict to Malawi
-              fields: ["geometry", "formatted_address"],
-            }
+        });
+      }
+
+      function useCurrentLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const coords = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              };
+              map.setCenter(coords);
+              map.setZoom(15); // Closer zoom for more detail
+              setDropOffMarker(coords);
+            },
+            () => {
+              alert("Unable to access your location. Please check location permissions.");
+            },
+            { enableHighAccuracy: true }
           );
-          
-          // Event listener for place selection
-          autocomplete.addListener("place_changed", () => {
-            const place = autocomplete.getPlace();
-            if (place.geometry) {
-              map.setCenter(place.geometry.location);
-              setDropOffMarker(place.geometry.location);
-              updateLocationText(place.formatted_address);
-            }
-          });
-          
-          // Event listener for manual address input
-          const dropOffInput = document.getElementById("dropOffLocation");
-          dropOffInput.addEventListener("change", () => {
-            const inputText = dropOffInput.value;
-            if (inputText) {
-              // Geocode the address
-              geocoder.geocode(
-                { address: inputText, componentRestrictions: { country: "MW" } },
-                (results, status) => {
-                  if (status === "OK" && results[0]) {
-                    map.setCenter(results[0].geometry.location);
-                    setDropOffMarker(results[0].geometry.location);
-                    updateLocationText(results[0].formatted_address);
-                  } else {
-                    alert("Address not found. Please enter a valid address in Malawi.");
-                  }
-                }
-              );
-            }
-          });
+        } else {
+          alert("Geolocation is not supported by your browser.");
         }
       }
-      
+
       function setDropOffMarker(location) {
-        // Create or update the drop-off marker
+        const svgIcon = {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve">
+              <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+                <path d="M 45 0 C 29.897 0 17.611 12.287 17.611 27.389 C 17.611 46.616 43.853 66.607 45 90 c 1.147 -23.393 27.389 -43.384 27.389 -62.611 C 72.389 12.287 60.103 0 45 0 z" style="fill: rgb(247,144,30);" />
+                <circle cx="45.01" cy="26.57" r="12.5" style="fill: rgb(255,255,255);" />
+              </g>
+            </svg>
+          `),
+          scaledSize: new google.maps.Size(40, 40),
+        };
+
         if (!dropOffMarker) {
           dropOffMarker = new google.maps.Marker({
             position: location,
             map: map,
             draggable: true,
-            title: "Drop-Off Location",
-            icon: {
-              url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Map_marker_icon_-_Orange.svg/120px-Map_marker_icon_-_Orange.svg.png",
-              scaledSize: new google.maps.Size(40, 40),
-            },
+            title: "Drag to set drop-off location",
+            icon: svgIcon,
           });
-          
-          // Update address when marker is dragged
+
+          // Update coordinates when marker is dragged
           dropOffMarker.addListener("dragend", () => {
-            dropOffCoords = dropOffMarker.getPosition();
-            geocodeLatLng(dropOffCoords, (address) => {
-              updateLocationText(address);
-            });
+            const position = dropOffMarker.getPosition();
+            updateDropOffInput(position);
           });
         } else {
           dropOffMarker.setPosition(location);
         }
-        
-        dropOffCoords = location;
+
+        updateDropOffInput(location);
       }
-      
-      function updateLocationText(address) {
-        // Update the drop-off location input field with the address
-        if (address) {
-          document.getElementById("dropOffLocation").value = address;
-        }
+
+      function updateDropOffInput(coords) {
+        document.getElementById("dropOffInput").value = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
       }
-      
-      function geocodeLatLng(latlng, callback) {
-        // Reverse geocode to get the address from coordinates
-        geocoder.geocode({ location: latlng }, (results, status) => {
-          if (status === "OK") {
-            if (results[0]) {
-              callback(results[0].formatted_address);
-            } else {
-              callback(`Lat: ${latlng.lat().toFixed(5)}, Lng: ${latlng.lng().toFixed(5)}`);
-            }
-          } else {
-            callback(`Lat: ${latlng.lat().toFixed(5)}, Lng: ${latlng.lng().toFixed(5)}`);
-          }
-        });
-      }
-      
-      function copyInfo() {
-        // Copy the Google Maps link to the clipboard
-        if (!dropOffCoords) {
+
+      function copyDropOffInfo() {
+        if (!dropOffMarker || !dropOffMarker.getPosition()) {
           alert("Please set the drop-off location first.");
           return;
         }
-        
-        const lat = dropOffCoords.lat().toFixed(5);
-        const lng = dropOffCoords.lng().toFixed(5);
-        const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-        
-        navigator.clipboard.writeText(mapsLink).then(() => {
-          alert("Google Maps link copied to clipboard!");
+
+        const coords = dropOffMarker.getPosition();
+        const info = `https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)}`;
+        navigator.clipboard.writeText(info).then(() => {
+          alert("Drop-off location link copied to clipboard!");
         }).catch(() => {
-          alert("Failed to copy the link. Please try again.");
+          alert("Failed to copy the location. Please try again.");
         });
       }
     </script>
-    
-    <!-- Google Maps JavaScript API -->
-    <script
-      async
-      defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQQ8n-3TZT5jp7nRfuzffsqw0LsiP0fmY&libraries=places&callback=initMap"
-    ></script>
+
+    <!-- Google Maps JavaScript and Places Library -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
 
