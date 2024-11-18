@@ -18,120 +18,79 @@
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
-      .btn, input[type="text"], select {
-        padding: 10px;
-        border-radius: 20px;
-        border: 1px solid #ccc;
-        font-size: 14px;
-        cursor: pointer;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        transition: background-color 0.3s;
-        height: 50px;
-      }
-      input[type="text"] {
-        width: calc(70% - 5px);
-        margin-top: 5px;
-      }
       .btn {
-        width: calc(30% - 5px);
+        padding: 0 15px;
         background-color: #F4A261;
         color: #FFFFFF;
         border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 17px; /* Increased font size */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: background-color 0.3s;
+        margin: 10px;
+        height: 60px; /* Increased height to accommodate new line text */
+        line-height: 1.2; /* Allow better line spacing */
       }
       .btn:hover {
         background-color: #E63946;
-      }
-      select {
-        width: calc(30% - 5px);
-        margin-left: 5px;
-        background-color: white;
-      }
-      #info {
-        margin-top: 10px;
-      }
-      #manualCopy {
-        display: none;
-        padding: 10px;
-        border: 1px solid #ddd;
-        margin-top: 10px;
-        border-radius: 5px;
-        background-color: #fffbe6;
       }
       .input-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 10px;
         margin-top: 10px;
+        gap: 10px; /* Space between input and button */
+      }
+      input[type="text"] {
+        width: 70%;
+        padding: 0 15px;
+        border-radius: 20px;
+        border: 1px solid #ccc;
+        font-size: 18px; /* Increased font size */
+        height: 60px; /* Increased height */
+        line-height: 50px; /* Align text vertically */
       }
     </style>
   </head>
   <body>
     <div class="input-container">
-      <input type="text" id="pickupLocation" placeholder="Enter or select pickup location">
+      <input type="text" id="dropOffInput" placeholder="Select drop-off location" autocomplete="off">
       <button class="btn" onclick="useCurrentLocation()">Current<br>Location</button>
-    </div>
-
-    <div class="input-container">
-      <input type="text" id="destination" placeholder="Enter destination address">
-      <select id="vehicleType" onchange="calculateRoute()">
-        <option value="car">🚗 Car</option>
-        <option value="motorcycle">🏍️ Motorcycle</option>
-      </select>
     </div>
 
     <div id="map"></div>
 
-    <div id="info">
-      <p id="distance">Distance: Calculating...</p>
-      <p id="price">Price: Calculating...</p>
-      <button class="btn" onclick="copyInfo()">Copy Information</button>
-      <div id="manualCopy"></div>
-    </div>
+    <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
 
     <script>
-      let map, pickupMarker, destinationMarker, directionsRenderer, directionsService;
-      let destinationCoords;
+      let map, dropOffMarker, autocomplete;
 
       function initMap() {
-        directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({
-          suppressMarkers: true,
-          polylineOptions: {
-            strokeColor: '#FFFFFF',
-            strokeOpacity: 0.7,
-            strokeWeight: 5
-          }
-        });
-
+        // Initialize the map centered on Blantyre, Malawi
+        const defaultCoords = { lat: -15.7861, lng: 35.0058 };
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: -15.7861, lng: 35.0058 },
-          zoom: 13,
+          center: defaultCoords,
+          zoom: 13, // Set closer zoom on Malawi
           mapTypeId: "hybrid",
         });
-        directionsRenderer.setMap(map);
 
-        // Autocomplete for pickup location
-        const pickupInput = document.getElementById("pickupLocation");
-        const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput, {
-          componentRestrictions: { country: "MW" },
-        });
-        pickupAutocomplete.addListener("place_changed", () => {
-          const place = pickupAutocomplete.getPlace();
-          if (place.geometry && place.geometry.location) {
-            setPickupLocation(place.geometry.location);
-          }
+        // Initialize the input field and autocomplete
+        const dropOffInput = document.getElementById("dropOffInput");
+        autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
+          componentRestrictions: { country: "MW" }, // Restrict to Malawi
         });
 
-        // Autocomplete for destination
-        const destinationInput = document.getElementById("destination");
-        const destinationAutocomplete = new google.maps.places.Autocomplete(destinationInput, {
-          componentRestrictions: { country: "MW" },
-        });
-        destinationAutocomplete.addListener("place_changed", () => {
-          const place = destinationAutocomplete.getPlace();
+        // Handle place selection from autocomplete
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
           if (place.geometry && place.geometry.location) {
-            setDestination(place.geometry.location);
+            const location = place.geometry.location;
+            map.setCenter(location);
+            map.setZoom(15); // Closer zoom for more detail
+            setDropOffMarker(location);
+          } else {
+            alert("Invalid place selected. Please try again.");
           }
         });
       }
@@ -142,9 +101,11 @@
             (position) => {
               const coords = {
                 lat: position.coords.latitude,
-                lng: position.coords.longitude
+                lng: position.coords.longitude,
               };
-              setPickupLocation(coords);
+              map.setCenter(coords);
+              map.setZoom(15); // Closer zoom for more detail
+              setDropOffMarker(coords);
             },
             () => {
               alert("Unable to access your location. Please check location permissions.");
@@ -156,101 +117,56 @@
         }
       }
 
-      function setPickupLocation(coords) {
-        document.getElementById("pickupLocation").value = `Lat: ${coords.lat.toFixed(5)}, Lng: ${coords.lng.toFixed(5)}`;
-        const iconUrl = "https://maps.google.com/mapfiles/ms/icons/orange-dot.png";
+      function setDropOffMarker(location) {
+        const svgIcon = {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve">
+              <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+                <path d="M 45 0 C 29.897 0 17.611 12.287 17.611 27.389 C 17.611 46.616 43.853 66.607 45 90 c 1.147 -23.393 27.389 -43.384 27.389 -62.611 C 72.389 12.287 60.103 0 45 0 z" style="fill: rgb(247,144,30);" />
+                <circle cx="45.01" cy="26.57" r="12.5" style="fill: rgb(255,255,255);" />
+              </g>
+            </svg>
+          ),
+          scaledSize: new google.maps.Size(40, 40),
+        };
 
-        if (!pickupMarker) {
-          pickupMarker = new google.maps.Marker({
-            position: coords,
-            map: map,
-            title: "Pickup Location",
-            icon: {
-              url: iconUrl,
-              scaledSize: new google.maps.Size(40, 40),
-            },
-          });
-        } else {
-          pickupMarker.setPosition(coords);
-        }
-
-        map.setCenter(coords);
-        calculateRoute();
-      }
-
-      function setDestination(location) {
-        document.getElementById("destination").value = `Lat: ${location.lat().toFixed(5)}, Lng: ${location.lng().toFixed(5)}`;
-
-        if (!destinationMarker) {
-          destinationMarker = new google.maps.Marker({
+        if (!dropOffMarker) {
+          dropOffMarker = new google.maps.Marker({
             position: location,
             map: map,
-            title: "Destination Location",
-            icon: {
-              url: "https://maps.google.com/mapfiles/ms/icons/orange-dot.png",
-              scaledSize: new google.maps.Size(40, 40),
-            },
+            draggable: true,
+            title: "Drag to set drop-off location",
+            icon: svgIcon,
+          });
+
+          // Update coordinates when marker is dragged
+          dropOffMarker.addListener("dragend", () => {
+            const position = dropOffMarker.getPosition();
+            updateDropOffInput(position);
           });
         } else {
-          destinationMarker.setPosition(location);
+          dropOffMarker.setPosition(location);
         }
 
-        destinationCoords = location;
-        calculateRoute();
+        updateDropOffInput(location);
       }
 
-      function calculateRoute() {
-        if (!pickupMarker || !destinationCoords) {
+      function updateDropOffInput(coords) {
+        document.getElementById("dropOffInput").value = Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)};
+      }
+
+      function copyDropOffInfo() {
+        if (!dropOffMarker || !dropOffMarker.getPosition()) {
+          alert("Please set the drop-off location first.");
           return;
         }
 
-        directionsService.route(
-          {
-            origin: pickupMarker.getPosition(),
-            destination: destinationCoords,
-            travelMode: 'DRIVING',
-          },
-          (response, status) => {
-            if (status === 'OK') {
-              directionsRenderer.setDirections(response);
-              const distanceText = response.routes[0].legs[0].distance.text;
-              const distanceValue = response.routes[0].legs[0].distance.value / 1000; // Convert to kilometers
-              document.getElementById("distance").innerText = `Distance: ${distanceText}`;
-              calculatePrice(distanceValue);
-            } else {
-              alert("Could not calculate route: " + status);
-            }
-          }
-        );
-      }
-
-      function calculatePrice(distance) {
-        const vehicleType = document.getElementById("vehicleType").value;
-        let pricePerKm = vehicleType === "car" ? 1500 : 1000;
-        let totalPrice = pricePerKm * distance;
-        document.getElementById("price").innerText = `Price: MK ${totalPrice.toFixed(2)}`;
-      }
-
-      function copyInfo() {
-        if (!pickupMarker || !destinationCoords) {
-          alert("Please ensure both pickup and destination locations are available.");
-          return;
-        }
-
-        const vehicleType = document.getElementById("vehicleType").value;
-        const pickupText = `Pickup Location: Lat ${pickupMarker.getPosition().lat().toFixed(5)}, Lng ${pickupMarker.getPosition().lng().toFixed(5)}`;
-        const destinationText = `Destination Location: Lat ${destinationCoords.lat().toFixed(5)}, Lng ${destinationCoords.lng().toFixed(5)}`;
-        const distanceText = document.getElementById("distance").innerText;
-        const priceText = document.getElementById("price").innerText;
-        const googleMapsLink = `https://www.google.com/maps/dir/${pickupMarker.getPosition().lat()},${pickupMarker.getPosition().lng()}/${destinationCoords.lat()},${destinationCoords.lng()}`;
-
-        const infoText = `${pickupText}\n${destinationText}\n${distanceText}\n${priceText}\nVehicle Type: ${vehicleType}\nGoogle Maps Link: ${googleMapsLink}`;
-        navigator.clipboard.writeText(infoText).then(() => {
-          alert("Information copied to clipboard!");
+        const coords = dropOffMarker.getPosition();
+        const info = https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)};
+        navigator.clipboard.writeText(info).then(() => {
+          alert("Drop-off location link copied to clipboard!");
         }).catch(() => {
-          document.getElementById("manualCopy").innerText = infoText;
-          document.getElementById("manualCopy").style.display = "block";
-          alert("Manual copy: Long press to select and copy the text.");
+          alert("Failed to copy the location. Please try again.");
         });
       }
     </script>
