@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -45,7 +46,7 @@
   </head>
   <body>
     <label>Drop-Off Location:</label>
-    <input type="text" id="dropOffLocation" placeholder="Enter name, address, or location"><br>
+    <input type="text" id="dropOffLocation" placeholder="Enter coordinates or search a place"><br>
 
     <div id="map"></div>
 
@@ -57,12 +58,12 @@
       function initMap() {
         // Initialize the map
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: -15.7861, lng: 35.0058 }, // Default center if geolocation fails
-          zoom: 13,
+          center: { lat: 0, lng: 0 }, // Start with a neutral center
+          zoom: 2,
           mapTypeId: "hybrid",
         });
 
-        // Automatically detect user's location
+        // Request user's current location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -72,38 +73,50 @@
               };
 
               map.setCenter(coords);
+              map.setZoom(13);
               setDropOffMarker(coords);
             },
-            (error) => {
-              alert("Unable to retrieve location. Please enable location permissions.");
+            () => {
+              alert("Unable to access your location. Please enter a location manually.");
             },
             { enableHighAccuracy: true }
           );
         } else {
-          alert("Geolocation is not supported by this browser.");
+          alert("Geolocation is not supported by your browser. Please enter a location manually.");
         }
 
-        // Initialize the Places Autocomplete
+        // Initialize the autocomplete feature for the input field
         const dropOffInput = document.getElementById("dropOffLocation");
         autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
-          types: ["geocode"], // Limit to address and places
           componentRestrictions: { country: "MW" }, // Restrict to Malawi
         });
 
-        // Listen for place selection
+        // When a place is selected from autocomplete
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
-
           if (place.geometry) {
             const location = {
               lat: place.geometry.location.lat(),
               lng: place.geometry.location.lng(),
             };
 
-            setDropOffMarker(location);
             map.setCenter(location);
+            map.setZoom(13);
+            setDropOffMarker(location);
           } else {
-            alert("No details available for the selected location.");
+            alert("Invalid place selected. Please try again.");
+          }
+        });
+
+        // Allow manual input of coordinates
+        dropOffInput.addEventListener("change", () => {
+          const coords = parseCoords(dropOffInput.value);
+          if (coords) {
+            map.setCenter(coords);
+            map.setZoom(13);
+            setDropOffMarker(coords);
+          } else {
+            alert("Invalid coordinates format. Use 'Lat: -xx.xxxx, Lng: xx.xxxx'");
           }
         });
       }
@@ -114,13 +127,14 @@
             position: location,
             map: map,
             title: "Drop-Off Location",
+            draggable: true,
             icon: {
               url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Map_marker_icon_-_Orange.svg/120px-Map_marker_icon_-_Orange.svg.png",
               scaledSize: new google.maps.Size(40, 40),
             },
-            draggable: true,
           });
 
+          // Update input field when the marker is dragged
           dropOffMarker.addListener("dragend", () => {
             dropOffCoords = dropOffMarker.getPosition();
             updateLocationText(dropOffCoords);
@@ -137,9 +151,17 @@
         document.getElementById("dropOffLocation").value = `Lat: ${coords.lat.toFixed(5)}, Lng: ${coords.lng.toFixed(5)}`;
       }
 
+      function parseCoords(text) {
+        const match = text.match(/Lat:\s*(-?\d+\.\d+),\s*Lng:\s*(-?\d+\.\d+)/);
+        if (match) {
+          return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+        }
+        return null;
+      }
+
       function copyInfo() {
         if (!dropOffCoords) {
-          alert("Please ensure a drop-off location is available.");
+          alert("No drop-off location set yet.");
           return;
         }
 
@@ -154,7 +176,7 @@
       }
     </script>
 
-    <!-- Google Maps and Places JavaScript API -->
+    <!-- Google Maps JavaScript API -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
