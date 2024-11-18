@@ -1,8 +1,7 @@
-
 <!DOCTYPE html>
 <html>
   <head>
-    <title>GoMoto</title>
+    <title>GoMoto - Drop-Off Location</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <style>
       body {
@@ -45,138 +44,83 @@
     </style>
   </head>
   <body>
-    <label>Drop-Off Location:</label>
-    <input type="text" id="dropOffLocation" placeholder="Enter coordinates or search a place"><br>
+    <h2>Set Drop-Off Location</h2>
+    <input type="text" id="dropOffInput" placeholder="Enter drop-off address or drag the marker" autocomplete="off"><br>
 
     <div id="map"></div>
 
-    <button class="btn" onclick="copyInfo()">Copy Location</button>
+    <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
 
     <script>
-      let map, dropOffMarker, dropOffCoords, autocomplete;
+      let map, dropOffMarker, dropOffCoords;
 
       function initMap() {
         // Initialize the map
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 0, lng: 0 }, // Start with a neutral center
-          zoom: 2,
+          center: { lat: -15.7861, lng: 35.0058 }, // Default center (Blantyre, Malawi)
+          zoom: 13,
           mapTypeId: "hybrid",
         });
 
-        // Request user's current location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const coords = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              };
+        // Initialize the marker
+        dropOffMarker = new google.maps.Marker({
+          position: { lat: -15.7861, lng: 35.0058 }, // Default marker position
+          map: map,
+          draggable: true,
+          title: "Drag to set drop-off location",
+          icon: {
+            url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Map_marker_icon_-_Orange.svg/120px-Map_marker_icon_-_Orange.svg.png",
+            scaledSize: new google.maps.Size(40, 40),
+          },
+        });
 
-              map.setCenter(coords);
-              map.setZoom(13);
-              setDropOffMarker(coords);
-            },
-            () => {
-              alert("Unable to access your location. Please enter a location manually.");
-            },
-            { enableHighAccuracy: true }
-          );
-        } else {
-          alert("Geolocation is not supported by your browser. Please enter a location manually.");
-        }
+        // Update coordinates when marker is dragged
+        dropOffMarker.addListener("dragend", () => {
+          dropOffCoords = dropOffMarker.getPosition();
+          updateDropOffInput(dropOffCoords);
+        });
 
-        // Initialize the autocomplete feature for the input field
-        const dropOffInput = document.getElementById("dropOffLocation");
-        autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
+        // Initialize the autocomplete functionality
+        const dropOffInput = document.getElementById("dropOffInput");
+        const autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
           componentRestrictions: { country: "MW" }, // Restrict to Malawi
         });
 
-        // When a place is selected from autocomplete
+        // When a place is selected, move the marker to that location
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
-          if (place.geometry) {
-            const location = {
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
-            };
-
+          if (place.geometry && place.geometry.location) {
+            const location = place.geometry.location;
             map.setCenter(location);
-            map.setZoom(13);
-            setDropOffMarker(location);
+            dropOffMarker.setPosition(location);
+            updateDropOffInput(location);
           } else {
             alert("Invalid place selected. Please try again.");
           }
         });
-
-        // Allow manual input of coordinates
-        dropOffInput.addEventListener("change", () => {
-          const coords = parseCoords(dropOffInput.value);
-          if (coords) {
-            map.setCenter(coords);
-            map.setZoom(13);
-            setDropOffMarker(coords);
-          } else {
-            alert("Invalid coordinates format. Use 'Lat: -xx.xxxx, Lng: xx.xxxx'");
-          }
-        });
       }
 
-      function setDropOffMarker(location) {
-        if (!dropOffMarker) {
-          dropOffMarker = new google.maps.Marker({
-            position: location,
-            map: map,
-            title: "Drop-Off Location",
-            draggable: true,
-            icon: {
-              url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Map_marker_icon_-_Orange.svg/120px-Map_marker_icon_-_Orange.svg.png",
-              scaledSize: new google.maps.Size(40, 40),
-            },
-          });
-
-          // Update input field when the marker is dragged
-          dropOffMarker.addListener("dragend", () => {
-            dropOffCoords = dropOffMarker.getPosition();
-            updateLocationText(dropOffCoords);
-          });
-        } else {
-          dropOffMarker.setPosition(location);
-        }
-
-        dropOffCoords = location;
-        updateLocationText(location);
+      function updateDropOffInput(coords) {
+        document.getElementById("dropOffInput").value = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
       }
 
-      function updateLocationText(coords) {
-        document.getElementById("dropOffLocation").value = `Lat: ${coords.lat.toFixed(5)}, Lng: ${coords.lng.toFixed(5)}`;
-      }
-
-      function parseCoords(text) {
-        const match = text.match(/Lat:\s*(-?\d+\.\d+),\s*Lng:\s*(-?\d+\.\d+)/);
-        if (match) {
-          return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-        }
-        return null;
-      }
-
-      function copyInfo() {
-        if (!dropOffCoords) {
-          alert("No drop-off location set yet.");
+      function copyDropOffInfo() {
+        if (!dropOffMarker || !dropOffMarker.getPosition()) {
+          alert("Please set the drop-off location first.");
           return;
         }
 
-        const lat = dropOffCoords.lat.toFixed(5);
-        const lng = dropOffCoords.lng.toFixed(5);
-        const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-
-        navigator.clipboard
-          .writeText(mapsLink)
-          .then(() => alert("Google Maps link copied to clipboard!"))
-          .catch(() => alert("Failed to copy the link. Please try again."));
+        const coords = dropOffMarker.getPosition();
+        const info = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
+        navigator.clipboard.writeText(info).then(() => {
+          alert("Drop-off location copied to clipboard!");
+        }).catch(() => {
+          alert("Failed to copy the location. Please try again.");
+        });
       }
     </script>
 
-    <!-- Google Maps JavaScript API -->
+    <!-- Google Maps JavaScript and Places Library -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
