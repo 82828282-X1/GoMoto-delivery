@@ -25,12 +25,12 @@
         border: none;
         border-radius: 20px;
         cursor: pointer;
-        font-size: 14px; /* Increased font size */
+        font-size: 17px; /* Increased font size */
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         transition: background-color 0.3s;
         margin: 10px;
-        height: 50px; /* Increased height */
-        line-height: 50px; /* Align text vertically */
+        height: 60px; /* Increased height to accommodate new line text */
+        line-height: 1.2; /* Allow better line spacing */
       }
       .btn:hover {
         background-color: #E63946;
@@ -48,15 +48,15 @@
         border-radius: 20px;
         border: 1px solid #ccc;
         font-size: 18px; /* Increased font size */
-        height: 50px; /* Increased height */
+        height: 60px; /* Increased height */
         line-height: 50px; /* Align text vertically */
       }
     </style>
   </head>
   <body>
     <div class="input-container">
-      <input type="text" id="dropOffInput" placeholder="Enter or select drop-off location" autocomplete="off">
-      <button class="btn" onclick="useCurrentLocation()">Current Location</button>
+      <input type="text" id="dropOffInput" placeholder="Select drop-off location" autocomplete="off">
+      <button class="btn" onclick="useCurrentLocation()">Current<br>Location</button>
     </div>
 
     <div id="map"></div>
@@ -174,7 +174,5 @@
     <!-- Google Maps JavaScript and Places Library -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
-</html>
-
 </html>
 
