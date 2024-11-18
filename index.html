@@ -44,25 +44,25 @@
     </style>
   </head>
   <body>
-    <label>Drop-Off Location (Detected):</label>
-    <input type="text" id="dropOffLocation" placeholder="Detecting current location..." readonly><br>
+    <label>Drop-Off Location:</label>
+    <input type="text" id="dropOffLocation" placeholder="Enter name, address, or location"><br>
 
     <div id="map"></div>
 
     <button class="btn" onclick="copyInfo()">Copy Location</button>
 
     <script>
-      let map, dropOffMarker, dropOffCoords;
+      let map, dropOffMarker, dropOffCoords, autocomplete;
 
       function initMap() {
         // Initialize the map
         map = new google.maps.Map(document.getElementById("map"), {
           center: { lat: -15.7861, lng: 35.0058 }, // Default center if geolocation fails
           zoom: 13,
-          mapTypeId: "hybrid", // Hybrid mode to show satellite view with labels
+          mapTypeId: "hybrid",
         });
 
-        // Get user's current location with high accuracy
+        // Automatically detect user's location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -71,24 +71,44 @@
                 lng: position.coords.longitude,
               };
 
-              // Set map center to user's location
               map.setCenter(coords);
-
-              // Place marker at user's location
               setDropOffMarker(coords);
             },
             (error) => {
               alert("Unable to retrieve location. Please enable location permissions.");
             },
-            { enableHighAccuracy: true } // Request high accuracy for geolocation
+            { enableHighAccuracy: true }
           );
         } else {
           alert("Geolocation is not supported by this browser.");
         }
+
+        // Initialize the Places Autocomplete
+        const dropOffInput = document.getElementById("dropOffLocation");
+        autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
+          types: ["geocode"], // Limit to address and places
+          componentRestrictions: { country: "MW" }, // Restrict to Malawi
+        });
+
+        // Listen for place selection
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+
+          if (place.geometry) {
+            const location = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            };
+
+            setDropOffMarker(location);
+            map.setCenter(location);
+          } else {
+            alert("No details available for the selected location.");
+          }
+        });
       }
 
       function setDropOffMarker(location) {
-        // Ensure the drop-off marker is created or updated
         if (!dropOffMarker) {
           dropOffMarker = new google.maps.Marker({
             position: location,
@@ -101,7 +121,6 @@
             draggable: true,
           });
 
-          // Update coordinates when marker is dragged
           dropOffMarker.addListener("dragend", () => {
             dropOffCoords = dropOffMarker.getPosition();
             updateLocationText(dropOffCoords);
@@ -110,38 +129,32 @@
           dropOffMarker.setPosition(location);
         }
 
-        // Update the coordinates globally
         dropOffCoords = location;
         updateLocationText(location);
       }
 
       function updateLocationText(coords) {
-        // Update the drop-off location text field
         document.getElementById("dropOffLocation").value = `Lat: ${coords.lat.toFixed(5)}, Lng: ${coords.lng.toFixed(5)}`;
       }
 
       function copyInfo() {
-        // Check if the drop-off location is available
         if (!dropOffCoords) {
           alert("Please ensure a drop-off location is available.");
           return;
         }
 
-        // Generate Google Maps link
         const lat = dropOffCoords.lat.toFixed(5);
         const lng = dropOffCoords.lng.toFixed(5);
         const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
 
-        // Copy the link to the clipboard
-        navigator.clipboard.writeText(mapsLink).then(() => {
-          alert("Google Maps link copied to clipboard!");
-        }).catch(() => {
-          alert("Failed to copy the link. Please try again.");
-        });
+        navigator.clipboard
+          .writeText(mapsLink)
+          .then(() => alert("Google Maps link copied to clipboard!"))
+          .catch(() => alert("Failed to copy the link. Please try again."));
       }
     </script>
 
-    <!-- Google Maps JavaScript -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&callback=initMap"></script>
+    <!-- Google Maps and Places JavaScript API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
