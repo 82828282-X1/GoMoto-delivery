@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>GoMoto - Drop-Off Location</title>
+    <title></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <style>
       body {
@@ -52,7 +52,7 @@
     <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
 
     <script>
-      let map, dropOffMarker, dropOffCoords, autocomplete;
+      let map, dropOffMarker, dropOffCoords, autocomplete, suggestionBox;
 
       function initMap() {
         // Initialize the map
@@ -68,29 +68,24 @@
           componentRestrictions: { country: "MW" }, // Restrict to Malawi
         });
 
-        // Listen for focus on the input field
-        dropOffInput.addEventListener("focus", () => {
-          if (!navigator.geolocation) {
-            alert("Geolocation is not supported by this browser.");
-            return;
-          }
+        // Add a custom "Use Current Location" option in the dropdown
+        dropOffInput.addEventListener("input", () => {
+          const customDropdown = document.querySelector(".pac-container");
+          if (!customDropdown) return;
 
           // Add "Use Current Location" as the first suggestion
-          const suggestionBox = new google.maps.places.AutocompleteService();
-          suggestionBox.getPlacePredictions(
-            { input: "Use Current Location", componentRestrictions: { country: "MW" } },
-            (predictions, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-                const firstSuggestion = predictions.find((prediction) =>
-                  prediction.description.toLowerCase().includes("use current location")
-                );
-                if (firstSuggestion) {
-                  dropOffInput.value = firstSuggestion.description;
-                  useCurrentLocation();
-                }
-              }
-            }
-          );
+          const currentLocationOption = document.createElement("div");
+          currentLocationOption.className = "pac-item";
+          currentLocationOption.style.cursor = "pointer";
+          currentLocationOption.textContent = "Use Current Location";
+          currentLocationOption.onclick = () => {
+            useCurrentLocation();
+          };
+
+          // Insert "Use Current Location" at the top of the dropdown
+          if (customDropdown.firstChild) {
+            customDropdown.insertBefore(currentLocationOption, customDropdown.firstChild);
+          }
         });
 
         // Handle place selection from autocomplete
