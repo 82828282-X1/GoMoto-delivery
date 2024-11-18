@@ -157,8 +157,8 @@
         }
 
         const coords = dropOffMarker.getPosition();
-        const info = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
-        navigator.clipboard.writeText(info).then(() => {
+        const googleMapsLink = `https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)}`;
+        navigator.clipboard.writeText(googleMapsLink).then(() => {
           alert("Drop-off location copied to clipboard!");
         }).catch(() => {
           alert("Failed to copy the location. Please try again.");
