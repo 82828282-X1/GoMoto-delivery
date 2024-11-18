@@ -54,34 +54,36 @@
       let map, dropOffMarker, dropOffCoords, autocomplete;
 
       function initMap() {
-        // Initialize the map with a default center at Blantyre, Malawi
+        // Initialize the map
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: -15.7861, lng: 35.0058 }, // Default center at Blantyre
-          zoom: 13, // Zoomed in to Blantyre
+          center: { lat: -15.7861, lng: 35.0058 }, // Default to Blantyre initially
+          zoom: 13,
           mapTypeId: "hybrid",
         });
+
+        // Try to use the user's current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const coords = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              };
+              map.setCenter(coords);
+              map.setZoom(13);
+              setDropOffMarker(coords); // Place marker at current location
+            },
+            () => {
+              alert("Unable to access your location. Please enable location permissions.");
+            },
+            { enableHighAccuracy: true }
+          );
+        }
 
         // Initialize the input field and autocomplete
         const dropOffInput = document.getElementById("dropOffInput");
         autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
           componentRestrictions: { country: "MW" }, // Restrict to Malawi
-        });
-
-        // Add "Use Current Location" to the dropdown
-        dropOffInput.addEventListener("focus", () => {
-          const customDropdown = document.querySelector(".pac-container");
-          if (customDropdown && !customDropdown.querySelector(".current-location-option")) {
-            const currentLocationOption = document.createElement("div");
-            currentLocationOption.className = "pac-item current-location-option";
-            currentLocationOption.style.cursor = "pointer";
-            currentLocationOption.textContent = "Use Current Location";
-            currentLocationOption.onclick = () => {
-              useCurrentLocation();
-            };
-
-            // Insert "Use Current Location" at the top of the dropdown
-            customDropdown.prepend(currentLocationOption);
-          }
         });
 
         // Handle place selection from autocomplete
@@ -98,47 +100,27 @@
         });
       }
 
-      function useCurrentLocation() {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const coords = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              };
-              map.setCenter(coords);
-              map.setZoom(13);
-              setDropOffMarker(coords);
-            },
-            () => {
-              alert("Unable to access your location. Please check location permissions.");
-            },
-            { enableHighAccuracy: true }
-          );
-        } else {
-          alert("Geolocation is not supported by your browser.");
-        }
-      }
-
       function setDropOffMarker(location) {
         if (!dropOffMarker) {
+          // Create the marker if it doesn't exist
           dropOffMarker = new google.maps.Marker({
             position: location,
             map: map,
             draggable: true,
-            title: "Drag to set drop-off location",
+            title: "Drop-Off Location",
             icon: {
               url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Map_marker_icon_-_Orange.svg/120px-Map_marker_icon_-_Orange.svg.png",
               scaledSize: new google.maps.Size(40, 40),
             },
           });
 
-          // Update coordinates when marker is dragged
+          // Update coordinates when the marker is dragged
           dropOffMarker.addListener("dragend", () => {
             dropOffCoords = dropOffMarker.getPosition();
             updateDropOffInput(dropOffCoords);
           });
         } else {
+          // Update the marker position
           dropOffMarker.setPosition(location);
         }
 
@@ -147,6 +129,7 @@
       }
 
       function updateDropOffInput(coords) {
+        // Update the input field with the marker's position
         document.getElementById("dropOffInput").value = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
       }
 
@@ -156,6 +139,7 @@
           return;
         }
 
+        // Generate the Google Maps link
         const coords = dropOffMarker.getPosition();
         const googleMapsLink = `https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)}`;
         navigator.clipboard.writeText(googleMapsLink).then(() => {
