@@ -54,10 +54,10 @@
       let map, dropOffMarker, dropOffCoords, autocomplete;
 
       function initMap() {
-        // Initialize the map (no default center or zoom)
+        // Initialize the map with a default center at Blantyre, Malawi
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 0, lng: 0 },
-          zoom: 2,
+          center: { lat: -15.7861, lng: 35.0058 }, // Default center at Blantyre
+          zoom: 13, // Zoomed in to Blantyre
           mapTypeId: "hybrid",
         });
 
@@ -170,3 +170,4 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
+
