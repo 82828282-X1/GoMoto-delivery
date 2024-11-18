@@ -4,6 +4,7 @@
     <title>GoMoto</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <style>
+      /* CSS Styles */
       body {
         font-family: Arial, sans-serif;
         text-align: center;
@@ -51,17 +52,26 @@
     <button class="btn" onclick="copyInfo()">Copy Drop-Off Location</button>
 
     <script>
+      // JavaScript Code
       let map, dropOffMarker, dropOffCoords;
+      let geocoder;
 
       function initMap() {
-        // Initialize the map with a default center
+        // Initialize the map centered on Blantyre, Malawi
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: -15.7861, lng: 35.0058 }, // Default to Blantyre
+          center: { lat: -15.7861, lng: 35.0058 },
           zoom: 13,
-          mapTypeId: "hybrid", // Hybrid mode to show satellite view with labels
+          mapTypeId: "hybrid",
         });
 
-        // Attempt to get user's current location
+        geocoder = new google.maps.Geocoder();
+
+        // Set a default marker at the map's center
+        const defaultLocation = map.getCenter();
+        setDropOffMarker(defaultLocation);
+        updateLocationText(null); // Initially, keep the input field empty
+
+        // Attempt to get the user's current location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -71,6 +81,10 @@
               };
               map.setCenter(coords);
               setDropOffMarker(coords);
+              // Reverse geocode to get the address
+              geocodeLatLng(coords, (address) => {
+                updateLocationText(address);
+              });
             },
             (error) => {
               console.log("Geolocation error: ", error);
@@ -80,17 +94,43 @@
           );
         }
 
-        // Set up input event to manually update the marker based on new input
+        // Set up Places Autocomplete
+        const autocomplete = new google.maps.places.Autocomplete(
+          document.getElementById("dropOffLocation"),
+          {
+            componentRestrictions: { country: "MW" }, // Restrict to Malawi
+            fields: ["geometry", "formatted_address"],
+          }
+        );
+
+        // Event listener for place selection
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry) {
+            map.setCenter(place.geometry.location);
+            setDropOffMarker(place.geometry.location);
+            updateLocationText(place.formatted_address);
+          }
+        });
+
+        // Event listener for manual address input
         const dropOffInput = document.getElementById("dropOffLocation");
         dropOffInput.addEventListener("change", () => {
           const inputText = dropOffInput.value;
-          // Attempt to parse latitude and longitude from input if manually changed
-          const coords = parseLatLng(inputText);
-          if (coords) {
-            map.setCenter(coords);
-            setDropOffMarker(coords);
-          } else {
-            alert("Invalid coordinates. Please enter in format: 'Lat: <value>, Lng: <value>'");
+          if (inputText) {
+            // Geocode the address
+            geocoder.geocode(
+              { address: inputText, componentRestrictions: { country: "MW" } },
+              (results, status) => {
+                if (status === "OK" && results[0]) {
+                  map.setCenter(results[0].geometry.location);
+                  setDropOffMarker(results[0].geometry.location);
+                  updateLocationText(results[0].formatted_address);
+                } else {
+                  alert("Address not found. Please enter a valid address in Malawi.");
+                }
+              }
+            );
           }
         });
       }
@@ -109,60 +149,69 @@
             },
           });
 
-          // Update coordinates when marker is dragged
+          // Update address when marker is dragged
           dropOffMarker.addListener("dragend", () => {
             dropOffCoords = dropOffMarker.getPosition();
-            updateLocationText(dropOffCoords);
+            geocodeLatLng(dropOffCoords, (address) => {
+              updateLocationText(address);
+            });
           });
         } else {
           dropOffMarker.setPosition(location);
         }
 
         dropOffCoords = location;
-        updateLocationText(location);
       }
 
-      function updateLocationText(coords) {
-        // Update the drop-off location text field
-        document.getElementById("dropOffLocation").value = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
+      function updateLocationText(address) {
+        // Update the drop-off location input field with the address
+        if (address) {
+          document.getElementById("dropOffLocation").value = address;
+        }
+      }
+
+      function geocodeLatLng(latlng, callback) {
+        // Reverse geocode to get the address from coordinates
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          if (status === "OK") {
+            if (results[0]) {
+              callback(results[0].formatted_address);
+            } else {
+              callback(`Lat: ${latlng.lat().toFixed(5)}, Lng: ${latlng.lng().toFixed(5)}`);
+            }
+          } else {
+            callback(`Lat: ${latlng.lat().toFixed(5)}, Lng: ${latlng.lng().toFixed(5)}`);
+          }
+        });
       }
 
       function copyInfo() {
-        // Check if the drop-off location is available
+        // Copy the Google Maps link to the clipboard
         if (!dropOffCoords) {
           alert("Please set the drop-off location first.");
           return;
         }
 
-        // Generate Google Maps link
         const lat = dropOffCoords.lat().toFixed(5);
         const lng = dropOffCoords.lng().toFixed(5);
         const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
 
-        // Copy the link to the clipboard
-        navigator.clipboard.writeText(mapsLink).then(() => {
-          alert("Google Maps link copied to clipboard!");
-        }).catch(() => {
-          alert("Failed to copy the link. Please try again.");
-        });
-      }
-
-      function parseLatLng(input) {
-        // A simple function to parse 'Lat: <value>, Lng: <value>' format
-        const regex = /Lat:\s*(-?\d+\.\d+),\s*Lng:\s*(-?\d+\.\d+)/;
-        const match = regex.exec(input);
-        if (match) {
-          return {
-            lat: parseFloat(match[1]),
-            lng: parseFloat(match[2]),
-          };
-        }
-        return null;
+        navigator.clipboard
+          .writeText(mapsLink)
+          .then(() => {
+            alert("Google Maps link copied to clipboard!");
+          })
+          .catch(() => {
+            alert("Failed to copy the link. Please try again.");
+          });
       }
     </script>
 
-    <!-- Google Maps JavaScript -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&callback=initMap"></script>
+    <!-- Google Maps JavaScript API -->
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQQ8n-3TZT5jp7nRfuzffsqw0LsiP0fmY&libraries=places&callback=initMap"
+    ></script>
   </body>
 </html>
-
