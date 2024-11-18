@@ -54,10 +54,10 @@
       let map, dropOffMarker, dropOffCoords, autocomplete;
 
       function initMap() {
-        // Initialize the map
+        // Initialize the map (no default center or zoom)
         map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 0, lng: 0 }, // Neutral center
-          zoom: 2, // Zoomed out until a location is set
+          center: { lat: 0, lng: 0 },
+          zoom: 2,
           mapTypeId: "hybrid",
         });
 
@@ -170,4 +170,3 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
   </body>
 </html>
-
