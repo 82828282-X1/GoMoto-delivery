@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -52,11 +51,8 @@
         height: 50px;
         line-height: 50px;
       }
-      iframe {
+      .chatbot-container {
         margin-top: 20px;
-        border: none;
-        width: 100%;
-        height: 500px;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
@@ -72,10 +68,21 @@
 
     <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
 
-    <iframe
-      src="https://www.chatbase.co/chatbot-iframe/xfq2n1zsxX0EOgMjbzEoc"
-      frameborder="0">
-    </iframe>
+    <!-- Chatbot Container -->
+    <div class="chatbot-container">
+      <script>
+        window.embeddedChatbotConfig = {
+          chatbotId: "xfq2n1zsxX0EOgMjbzEoc",
+          domain: "www.chatbase.co"
+        };
+      </script>
+      <script
+        src="https://www.chatbase.co/embed.min.js"
+        chatbotId="xfq2n1zsxX0EOgMjbzEoc"
+        domain="www.chatbase.co"
+        defer>
+      </script>
+    </div>
 
     <script>
       let map, dropOffMarker, autocomplete;
