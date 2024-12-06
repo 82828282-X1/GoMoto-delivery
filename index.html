@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>GoMoto</title>
+    <title>GoMoto Delivery</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <style>
       body {
@@ -51,143 +51,165 @@
         height: 50px;
         line-height: 50px;
       }
-      .chatbot-container {
+      .chat-container {
         margin-top: 20px;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: #ffffff;
+        padding: 10px;
+        max-height: 400px;
+        overflow-y: auto;
+        text-align: left;
+      }
+      .chat-header {
+        font-size: 18px;
+        font-weight: bold;
+        color: #fff;
+        background-color: #ffa500;
+        padding: 10px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .message {
+        margin: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        max-width: 80%;
+        word-wrap: break-word;
+      }
+      .user-message {
+        background-color: #d1ecf1;
+        align-self: flex-end;
+        text-align: right;
+      }
+      .bot-message {
+        background-color: #f8d7da;
+        align-self: flex-start;
+        text-align: left;
+      }
+      .chat-input {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-top: 1px solid #ccc;
+      }
+      .chat-input input {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        font-size: 16px;
+      }
+      .chat-input button {
+        background-color: #F4A261;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 20px;
+        font-size: 16px;
+      }
+      .chat-input button:hover {
+        background-color: #E63946;
       }
     </style>
   </head>
   <body>
-    <div class="input-container">
-      <input type="text" id="dropOffInput" placeholder="Enter or select drop-off location" autocomplete="off">
-      <button class="btn" onclick="useCurrentLocation()">Current<br>Location</button>
-    </div>
-
+    <h1>GoMoto Delivery 🚖🍔</h1>
     <div id="map"></div>
 
-    <button class="btn" onclick="copyDropOffInfo()">Copy Drop-Off Location</button>
-
-    <!-- Chatbot Container -->
-    <div class="chatbot-container">
-      <script>
-        window.embeddedChatbotConfig = {
-          chatbotId: "xfq2n1zsxX0EOgMjbzEoc",
-          domain: "www.chatbase.co"
-        };
-      </script>
-      <script
-        src="https://www.chatbase.co/embed.min.js"
-        chatbotId="xfq2n1zsxX0EOgMjbzEoc"
-        domain="www.chatbase.co"
-        defer>
-      </script>
+    <div class="chat-container" id="chat-container">
+      <div class="chat-header">Chat with GoMoto 🤖</div>
+      <div id="chat-body"></div>
+      <div class="chat-input">
+        <input type="text" id="chat-input" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+      </div>
     </div>
 
     <script>
-      let map, dropOffMarker, autocomplete;
+      let map, dropOffMarker;
+      let orderDetails = { location: null, food: null, quantity: null, paymentMethod: null };
 
       function initMap() {
-        const defaultCoords = { lat: -15.7861, lng: 35.0058 };
+        const defaultCoords = { lat: -15.7861, lng: 35.0058 }; // Default Malawi coordinates
         map = new google.maps.Map(document.getElementById("map"), {
           center: defaultCoords,
           zoom: 13,
-          mapTypeId: "hybrid",
         });
 
-        const dropOffInput = document.getElementById("dropOffInput");
-        autocomplete = new google.maps.places.Autocomplete(dropOffInput, {
-          componentRestrictions: { country: "MW" },
+        map.addListener("click", (event) => {
+          const coords = event.latLng;
+          setDropOffMarker(coords);
+          orderDetails.location = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
         });
-
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (place.geometry && place.geometry.location) {
-            const location = place.geometry.location;
-            map.setCenter(location);
-            map.setZoom(15);
-            setDropOffMarker(location);
-          } else {
-            alert("Invalid place selected. Please try again.");
-          }
-        });
-      }
-
-      function useCurrentLocation() {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const coords = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              };
-              map.setCenter(coords);
-              map.setZoom(15);
-              setDropOffMarker(coords);
-            },
-            () => {
-              alert("Unable to access your location. Please check location permissions.");
-            },
-            { enableHighAccuracy: true }
-          );
-        } else {
-          alert("Geolocation is not supported by your browser.");
-        }
       }
 
       function setDropOffMarker(location) {
-        const svgIcon = {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve">
-              <g style="stroke: none; fill: rgb(247,144,30);">
-                <path d="M 45 0 C 29.897 0 17.611 12.287 17.611 27.389 C 17.611 46.616 43.853 66.607 45 90 c 1.147 -23.393 27.389 -43.384 27.389 -62.611 C 72.389 12.287 60.103 0 45 0 z" />
-                <circle cx="45.01" cy="26.57" r="12.5" style="fill: rgb(255,255,255);" />
-              </g>
-            </svg>
-          `),
-          scaledSize: new google.maps.Size(40, 40),
-        };
-
         if (!dropOffMarker) {
           dropOffMarker = new google.maps.Marker({
             position: location,
             map: map,
             draggable: true,
-            title: "Drag to set drop-off location",
-            icon: svgIcon,
+            title: "Drop-Off Location",
           });
 
           dropOffMarker.addListener("dragend", () => {
             const position = dropOffMarker.getPosition();
-            updateDropOffInput(position);
+            orderDetails.location = `Lat: ${position.lat().toFixed(5)}, Lng: ${position.lng().toFixed(5)}`;
           });
         } else {
           dropOffMarker.setPosition(location);
         }
-
-        updateDropOffInput(location);
       }
 
-      function updateDropOffInput(coords) {
-        document.getElementById("dropOffInput").value = `Lat: ${coords.lat().toFixed(5)}, Lng: ${coords.lng().toFixed(5)}`;
+      function addMessage(content, type) {
+        const chatBody = document.getElementById("chat-body");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${type === "user" ? "user-message" : "bot-message"}`;
+        messageDiv.textContent = content;
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight; // Scroll to the bottom
       }
 
-      function copyDropOffInfo() {
-        if (!dropOffMarker || !dropOffMarker.getPosition()) {
-          alert("Please set the drop-off location first.");
+      async function sendMessage() {
+        const userMessage = document.getElementById("chat-input").value.trim();
+        if (!userMessage) return;
+
+        addMessage(userMessage, "user");
+        document.getElementById("chat-input").value = "";
+
+        // Update order details based on chatbot conversation
+        if (!orderDetails.food) {
+          orderDetails.food = userMessage;
+          addMessage("Great! How many would you like to order? 🍔", "bot");
           return;
         }
+        if (!orderDetails.quantity) {
+          orderDetails.quantity = userMessage;
+          addMessage("Got it! What's your preferred payment method? (e.g., Cash, Airtel Money) 💳", "bot");
+          return;
+        }
+        if (!orderDetails.paymentMethod) {
+          orderDetails.paymentMethod = userMessage;
+          addMessage("Thank you! Here is your order summary: 📋", "bot");
+          addMessage(
+            `Location: ${orderDetails.location}\nFood: ${orderDetails.food}\nQuantity: ${orderDetails.quantity}\nPayment Method: ${orderDetails.paymentMethod}`,
+            "bot"
+          );
+          addMessage("Sending this to WhatsApp now... 🚀", "bot");
+          sendToWhatsApp();
+          return;
+        }
+      }
 
-        const coords = dropOffMarker.getPosition();
-        const info = `https://www.google.com/maps?q=${coords.lat().toFixed(5)},${coords.lng().toFixed(5)}`;
-        navigator.clipboard.writeText(info).then(() => {
-          alert("Drop-off location link copied to clipboard!");
-        }).catch(() => {
-          alert("Failed to copy the location. Please try again.");
-        });
+      function sendToWhatsApp() {
+        const message = `🚖 *GoMoto Order Details* 🍔\n\n📍 Location: ${orderDetails.location}\n🍔 Food: ${orderDetails.food}\n🔢 Quantity: ${orderDetails.quantity}\n💳 Payment Method: ${orderDetails.paymentMethod}\n\nThank you for ordering with GoMoto! 🚀`;
+        const whatsappLink = `https://wa.me/265998598555?text=${encodeURIComponent(message)}`;
+        window.open(whatsappLink, "_blank");
       }
     </script>
 
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&libraries=places&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvMFiXrKuTBCoDhsxxoYJ2BJiUgFEgrFg&callback=initMap"></script>
   </body>
 </html>
