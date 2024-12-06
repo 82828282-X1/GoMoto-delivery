@@ -35,22 +35,6 @@
       .btn:hover {
         background-color: #E63946;
       }
-      .input-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 10px;
-        gap: 10px;
-      }
-      input[type="text"] {
-        width: 70%;
-        padding: 0 15px;
-        border-radius: 20px;
-        border: 1px solid #ccc;
-        font-size: 18px;
-        height: 50px;
-        line-height: 50px;
-      }
       .chat-container {
         margin-top: 20px;
         border-radius: 10px;
@@ -179,27 +163,30 @@
         addMessage(userMessage, "user");
         document.getElementById("chat-input").value = "";
 
-        // Update order details based on chatbot conversation
-        if (!orderDetails.food) {
-          orderDetails.food = userMessage;
-          addMessage("Great! How many would you like to order? 🍔", "bot");
-          return;
-        }
-        if (!orderDetails.quantity) {
-          orderDetails.quantity = userMessage;
-          addMessage("Got it! What's your preferred payment method? (e.g., Cash, Airtel Money) 💳", "bot");
-          return;
-        }
-        if (!orderDetails.paymentMethod) {
-          orderDetails.paymentMethod = userMessage;
-          addMessage("Thank you! Here is your order summary: 📋", "bot");
-          addMessage(
-            `Location: ${orderDetails.location}\nFood: ${orderDetails.food}\nQuantity: ${orderDetails.quantity}\nPayment Method: ${orderDetails.paymentMethod}`,
-            "bot"
-          );
-          addMessage("Sending this to WhatsApp now... 🚀", "bot");
-          sendToWhatsApp();
-          return;
+        try {
+          const response = await fetch("http://127.0.0.1:5000/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: userMessage,
+              orderDetails: orderDetails, // Pass current order details to backend
+            }),
+          });
+
+          const data = await response.json();
+          const botMessage = data.response;
+
+          addMessage(botMessage, "bot");
+
+          // If chatbot sends a confirmation message, send to WhatsApp
+          if (botMessage.toLowerCase().includes("confirmation")) {
+            sendToWhatsApp();
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          addMessage("Oops! Something went wrong. Please try again.", "bot");
         }
       }
 
