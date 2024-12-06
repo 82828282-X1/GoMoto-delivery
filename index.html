@@ -7,7 +7,8 @@
       body {
         font-family: Arial, sans-serif;
         text-align: center;
-        padding: 10px;
+        padding: 0;
+        margin: 0;
         background-color: #f9f9f9;
         color: #333;
       }
@@ -52,23 +53,38 @@
         line-height: 50px;
       }
       .chat-container {
-        margin-top: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
         background: #ffffff;
-        padding: 10px;
-        max-height: 400px;
-        overflow-y: auto;
-        text-align: left;
+        border-top: 2px solid #ffa500;
+        height: 40%;
+        max-height: 40%;
+        overflow: hidden;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
       }
       .chat-header {
         font-size: 18px;
         font-weight: bold;
         color: #fff;
-        background-color: #ffa500;
+        background-color: #FFA07A; /* Friendly peach color */
         padding: 10px;
         text-align: center;
         border-radius: 10px 10px 0 0;
+      }
+      .chat-header span {
+        display: inline-block;
+        font-size: 22px;
+        margin-left: 5px;
+      }
+      .chat-body {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 10px;
+        text-align: left;
       }
       .message {
         margin: 10px;
@@ -90,8 +106,10 @@
       .chat-input {
         display: flex;
         justify-content: space-between;
-        padding: 10px 0;
+        align-items: center;
+        padding: 10px;
         border-top: 1px solid #ccc;
+        background: #fff;
       }
       .chat-input input {
         flex-grow: 1;
@@ -123,9 +141,11 @@
     <div id="map"></div>
 
     <!-- Chatbot Section -->
-    <div class="chat-container" id="chat-container">
-      <div class="chat-header">Chat with GoMoto 🤖</div>
-      <div id="chat-body"></div>
+    <div class="chat-container">
+      <div class="chat-header">
+        Chat with GoMoto <span>🌟🤖</span>
+      </div>
+      <div class="chat-body" id="chat-body"></div>
       <div class="chat-input">
         <input type="text" id="chat-input" placeholder="Type your message...">
         <button onclick="sendMessage()">Send</button>
@@ -221,21 +241,10 @@
           const botMessage = data.response;
 
           addMessage(botMessage, "bot");
-
-          // If chatbot sends a confirmation message, send to WhatsApp
-          if (botMessage.toLowerCase().includes("confirmation")) {
-            sendToWhatsApp();
-          }
         } catch (error) {
           console.error("Error:", error);
           addMessage("Oops! Something went wrong. Please try again.", "bot");
         }
-      }
-
-      function sendToWhatsApp() {
-        const message = `🚖 *GoMoto Order Details* 🍔\n\n📍 Location: ${orderDetails.location}\n🍔 Food: ${orderDetails.food}\n🔢 Quantity: ${orderDetails.quantity}\n💳 Payment Method: ${orderDetails.paymentMethod}\n\nThank you for ordering with GoMoto! 🚀`;
-        const whatsappLink = `https://wa.me/265998598555?text=${encodeURIComponent(message)}`;
-        window.open(whatsappLink, "_blank");
       }
     </script>
 
